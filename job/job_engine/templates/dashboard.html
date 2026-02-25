@@ -1,0 +1,532 @@
+<!-- templates/dashboard.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Engine Dashboard</title>
+    <meta http-equiv="refresh" content="10">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #09090b;
+            --surface: #121214;
+            --border: #27272a;
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --accent: #ffffff;
+
+            --success: #10b981;
+            --info: #3b82f6;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --queued: #06b6d4;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            padding: 3rem 5rem;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Animations */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulseDot {
+            0% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+
+        .animate-fade-up {
+            animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 3.5rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            font-weight: 600;
+            letter-spacing: -0.03em;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        header h1 span.pulse {
+            width: 10px;
+            height: 10px;
+            background-color: var(--success);
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 8px var(--success);
+            animation: pulseDot 2s infinite;
+        }
+
+        .meta-group {
+            display: flex;
+            gap: 2.5rem;
+        }
+
+        .meta-item {
+            display: inline-flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .meta-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .meta-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.2rem;
+            font-weight: 400;
+            color: var(--accent);
+        }
+
+        /* Grid & Cards */
+        .section-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            gap: 16px;
+        }
+
+        .section-title::after {
+            content: '';
+            flex-grow: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 4rem;
+        }
+
+        .card {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            border-radius: 2px;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--border);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Status Tracking Highlights */
+        .status-completed:hover::before {
+            background: var(--success);
+        }
+
+        .status-running:hover::before {
+            background: var(--info);
+        }
+
+        .status-failed:hover::before {
+            background: var(--danger);
+        }
+
+        .status-pending:hover::before {
+            background: var(--text-muted);
+        }
+
+        .status-retrying:hover::before {
+            background: var(--warning);
+        }
+
+        .status-queued:hover::before {
+            background: var(--queued);
+        }
+
+        .status-cancelled:hover::before {
+            background: #71717a;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: #3f3f46;
+            box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.6);
+        }
+
+        .card-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+
+        .card-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.2rem;
+            font-weight: 400;
+            line-height: 1;
+            color: var(--text-main);
+        }
+
+        /* Active Charts */
+        .bar-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+            height: 200px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            padding: 24px;
+            margin-bottom: 4rem;
+        }
+
+        .bar-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            height: 100%;
+            justify-content: flex-end;
+        }
+
+        .bar {
+            width: 100%;
+            background: #27272a;
+            border-radius: 2px 2px 0 0;
+            min-height: 2px;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+
+        .bar-col:hover .bar {
+            background: var(--text-main);
+            box-shadow: 0 -4px 12px rgba(255, 255, 255, 0.1);
+        }
+
+        .bar-label {
+            font-size: 0.65rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-muted);
+            margin-top: 10px;
+        }
+
+        .bar-value {
+            font-size: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent);
+            margin-bottom: 8px;
+            opacity: 0;
+            transform: translateY(5px);
+            transition: all 0.2s ease;
+        }
+
+        .bar-col:hover .bar-value {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Table Log */
+        .table-container {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            overflow: auto;
+            margin-bottom: 2rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            padding: 1rem 1.5rem;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.85rem;
+            color: var(--text-main);
+            font-family: 'JetBrains Mono', monospace;
+            transition: background 0.2s;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: #18181b;
+        }
+
+        .table-job-name {
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+        }
+
+        /* Pill Badges Minimal */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .badge-completed {
+            border: 1px solid var(--success);
+            color: var(--success);
+            background: transparent;
+        }
+
+        .badge-running {
+            border: 1px solid var(--info);
+            color: var(--info);
+            background: transparent;
+        }
+
+        .badge-failed {
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            background: transparent;
+        }
+
+        .badge-pending {
+            border: 1px solid var(--text-muted);
+            color: var(--text-muted);
+            background: transparent;
+        }
+
+        .badge-retrying {
+            border: 1px solid var(--warning);
+            color: var(--warning);
+            background: transparent;
+        }
+
+        .badge-queued {
+            border: 1px solid var(--queued);
+            color: var(--queued);
+            background: transparent;
+        }
+
+        .badge-cancelled {
+            border: 1px solid #71717a;
+            color: #71717a;
+            background: transparent;
+        }
+
+        .text-muted {
+            color: var(--text-muted);
+        }
+
+        .text-id {
+            color: #52525b;
+            font-size: 0.75rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            body {
+                padding: 2rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1.5rem;
+            }
+
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1.5rem;
+            }
+
+            .grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .meta-group {
+                flex-wrap: wrap;
+                gap: 1.5rem;
+            }
+
+            header h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="animate-fade-up">
+        <header>
+            <div>
+                <h1><span class="pulse"></span> Engine.</h1>
+                <div class="meta-label" style="margin-top: 10px;">Live Telemetry — {{ now }}</div>
+            </div>
+
+            <div class="meta-group">
+                <div class="meta-item">
+                    <span class="meta-label">Avg Execution</span>
+                    <span class="meta-value">{{ avg_duration }}{% if avg_duration != "N/A" %}s{% endif %}</span>
+                </div>
+                {% if redis_info %}
+                <div class="meta-item">
+                    <span class="meta-label">Redis Enqueued</span>
+                    <span class="meta-value">{{ redis_info.queue_length }}</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Active Workers</span>
+                    <span class="meta-value">{{ redis_info.processing }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </header>
+
+        <h2 class="section-title">Job States</h2>
+        <div class="grid">
+            {% set statuses = ['pending', 'queued', 'running', 'completed', 'failed', 'retrying', 'cancelled'] %}
+            {% for s in statuses %}
+            <div class="card status-{{ s }}">
+                <div class="card-label">{{ s }}</div>
+                <div class="card-value">{{ status_counts.get(s, 0) }}</div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <h2 class="section-title">Throughput Activity (12h)</h2>
+        {% set max_count = throughput | map(attribute='count') | max if throughput else 1 %}
+        {% set max_count = max_count if max_count > 0 else 1 %}
+        <div class="bar-chart">
+            {% for t in throughput %}
+            <div class="bar-col">
+                <div class="bar-value">{{ t.count }}</div>
+                {% set h_attr = 'style="height: ' ~ ((t.count / max_count * 100) | int) ~ '%;"' %}
+                <div class="bar" {{ h_attr|safe }}></div>
+                <div class="bar-label">{{ t.hour }}</div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <h2 class="section-title">Distribution</h2>
+        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+            {% for type_name, count in type_counts.items() %}
+            <div class="card">
+                <div class="card-label">{{ type_name }}</div>
+                <div class="card-value">{{ count }}</div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <h2 class="section-title">Recent Execution Log</h2>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Identifier</th>
+                        <th>Type</th>
+                        <th>State</th>
+                        <th>Priority</th>
+                        <th>Attempt</th>
+                        <th>Duration</th>
+                        <th>Timestamp (UTC)</th>
+                        <th>Node ID</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for job in recent_jobs %}
+                    <tr>
+                        <td class="table-job-name" title="{{ job.id }}">{{ job.name[:40] }}</td>
+                        <td class="text-muted">{{ job.job_type.value }}</td>
+                        <td><span class="badge badge-{{ job.status.value }}">{{ job.status.value }}</span></td>
+                        <td>{{ job.priority }}</td>
+                        <td>{{ job.attempt }}/{{ job.max_retries }}</td>
+                        <td>{{ "%.2f"|format(job.duration_seconds) ~ "s" if job.duration_seconds else "—" }}</td>
+                        <td class="text-muted">{{ job.created_at.strftime("%H:%M:%S") if job.created_at else "—" }}</td>
+                        <td class="text-id">{{ job.worker_id.split('-')[1] if job.worker_id and "-" in job.worker_id
+                            else job.worker_id or "—" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+
+</html>
